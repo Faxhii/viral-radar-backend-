@@ -7,12 +7,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Fallback to SQLite if no DATABASE_URL is provided or if Docker fails
-# DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/viralvision")
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./viralvision.db")
+# Get DB URL from env, fallback to SQLite for local dev
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./viralvision.db")
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# Fix for some Postgres URL formats (postgres:// -> postgresql://)
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# PostgreSQL requires different args than SQLite
+if "sqlite" in SQLALCHEMY_DATABASE_URL:
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
