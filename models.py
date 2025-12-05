@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, J
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from .database import Base
+from database import Base
 
 class PlanType(str, enum.Enum):
     FREE = "free"

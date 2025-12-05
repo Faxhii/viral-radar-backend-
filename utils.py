@@ -5,7 +5,7 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from . import database, models
+import database, models
 
 # Secret key for JWT encoding/decoding
 # In production, this should be loaded from environment variables
