@@ -67,6 +67,9 @@ def process_analysis(analysis_id: int, video_path: str):
 
     except Exception as e:
         import traceback
+        print(f"CRITICAL ANALYSIS FAILURE ID {analysis_id}: {e}")
+        traceback.print_exc() # This prints to stderr which Railway captures
+        
         with open("error.log", "a") as f:
             f.write(f"Analysis ID {analysis_id} Failed:\n")
             traceback.print_exc(file=f)

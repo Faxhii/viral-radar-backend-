@@ -103,23 +103,31 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     # if "mock_video" in video_path:
     #      raise ValueError("Mock video cannot be analyzed by Gemini.")
 
+    print(f"Uploading file to Gemini: {video_path}")
     video_file = genai.upload_file(video_path)
+    print(f"File uploaded: {video_file.name}, State: {video_file.state.name}")
     
-    # Wait for processing? Usually fast for small videos.
-    # But 'upload_file' is async in processing on server side.
-    # We should check state.
     import time
     while video_file.state.name == "PROCESSING":
+        print("Waiting for video processing...")
         time.sleep(2)
         video_file = genai.get_file(video_file.name)
         
     if video_file.state.name == "FAILED":
+        print(f"Video processing failed: {video_file.state.name}")
         raise ValueError("Video processing failed by Gemini.")
 
-    response = model.generate_content([prompt, video_file])
+    print("Generating content...")
+    try:
+        response = model.generate_content([prompt, video_file])
+        print("Content generated successfully.")
+    except Exception as e:
+        print(f"Gemini Generation Error: {e}")
+        raise e
     
     # Clean up response text to ensure it's JSON
     text = response.text.strip()
+    print(f"Raw Gemini Response: {text[:200]}...") # Print first 200 chars
     if text.startswith("```json"):
         text = text[7:-3]
     
