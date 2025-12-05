@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Depends, Header
 from sqlalchemy.orm import Session
-from ..database import get_db, SessionLocal
-from ..models import User, PlanType
+from database import get_db, SessionLocal
+from models import User, PlanType
 import hmac
 import hashlib
 import json
@@ -83,3 +83,29 @@ async def lemon_squeezy_webhook(request: Request, x_signature: str = Header(None
             db.close()
 
     return {"status": "received"}
+
+@router.post("/simulate")
+async def simulate_payment(
+    email: str, 
+    plan: PlanType, 
+    secret: str,
+    db: Session = Depends(get_db)
+):
+    """
+    DEBUG ONLY: Simulate a payment webhook to upgrade a user.
+    """
+    # Simple security check
+    if secret != LEMON_SQUEEZY_WEBHOOK_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+        
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.plan = plan
+    # Set dummy IDs for the UI to look "active"
+    user.lemon_squeezy_customer_id = "test_cust_123"
+    user.lemon_squeezy_subscription_id = "test_sub_123"
+    
+    db.commit()
+    return {"status": "success", "message": f"User {email} upgraded to {plan}"}

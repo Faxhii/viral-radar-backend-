@@ -6,12 +6,14 @@ import os
 import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from ..database import get_db, SessionLocal
-from ..models import Video, Analysis, User, AnalysisStatus, PlanType
-from ..schemas import VideoOut, VideoCreate, AnalysisOut, ScriptCreate
-from ..services.video_processor import download_video, extract_audio, extract_frames
-from ..services.gemini_analyzer import analyze_video_content, analyze_script_content
-from ..dependencies import get_current_user
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from database import get_db, SessionLocal
+from models import Video, Analysis, User, AnalysisStatus, PlanType
+from schemas import VideoOut, VideoCreate, AnalysisOut, ScriptCreate
+from services.video_processor import download_video, extract_audio, extract_frames
+from services.gemini_analyzer import analyze_video_content, analyze_script_content
+from dependencies import get_current_user
 
 router = APIRouter(
     prefix="/api/videos",

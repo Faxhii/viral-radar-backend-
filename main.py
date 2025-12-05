@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base, SessionLocal, get_db
-from .routers import videos, auth, payments
-from .models import User, PlanType, Video, Analysis, Review
-from .schemas import ReviewCreate, ReviewOut
+from database import engine, Base, SessionLocal, get_db
+from routers import videos, auth, payments
+from models import User, PlanType, Video, Analysis, Review
+from schemas import ReviewCreate, ReviewOut
 from typing import List
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
