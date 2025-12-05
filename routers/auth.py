@@ -16,21 +16,6 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
         db_user = db.query(models.User).filter(models.User.email == user.email).first()
         if db_user:
             print("Email already registered")
-            raise HTTPException(status_code=400, detail="Email already registered")
-        
-        hashed_password = utils.get_password_hash(user.password)
-        new_user = models.User(
-            email=user.email,
-            hashed_password=hashed_password,
-            plan=models.PlanType.FREE,
-            full_name=user.full_name,
-            primary_platform=user.primary_platform
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        print(f"User registered successfully: {new_user.id}")
-        return new_user
     except Exception as e:
         print(f"Registration error: {str(e)}")
         import traceback

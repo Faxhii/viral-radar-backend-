@@ -83,37 +83,19 @@ def process_analysis(analysis_id: int, video_path: str):
 from datetime import datetime, timedelta
 from sqlalchemy import func
 
-def check_usage_limit(user: User, db: Session):
-    """
-    Enforce monthly usage limits based on plan.
-    Free: 3 analyses/month
-    Pro: 30 analyses/month
-    Agency: 60 analyses/month
-    """
-    # 1. Determine Limit
-    if user.plan == PlanType.AGENCY:
-        limit = 60
-    elif user.plan == PlanType.PRO:
-        limit = 30
-    else:
-        limit = 3 # Free
-        
-    # 2. Count usage for current month
-    now = datetime.utcnow()
-    start_of_month = datetime(now.year, now.month, 1)
-    
-    usage_count = db.query(Analysis).filter(
-        Analysis.user_id == user.id,
-        Analysis.created_at >= start_of_month
-    ).count()
-    
-    print(f"User {user.email} (Plan: {user.plan}) Usage: {usage_count}/{limit}")
-    
-    if usage_count >= limit:
+def check_credits(user: User, required_credits: float):
+    if user.credits < required_credits:
         raise HTTPException(
             status_code=403, 
-            detail=f"Usage limit reached for {user.plan.value} plan ({usage_count}/{limit}). Please upgrade to continue."
+            detail=f"Insufficient credits. Required: {required_credits}, Available: {user.credits}. Please upgrade your plan."
         )
+
+def deduct_credits(user: User, amount: float, db: Session):
+    check_credits(user, amount)
+    user.credits -= amount
+    db.commit()
+    db.refresh(user)
+    print(f"Deducted {amount} credits from User {user.email}. New balance: {user.credits}")
 
 @router.post("/upload", response_model=AnalysisOut)
 async def upload_video(
@@ -122,8 +104,10 @@ async def upload_video(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Check Usage Limit
-    check_usage_limit(current_user, db)
+    # Check Minimum Balance (assume worst case 2.0 initially or just allow check inside)
+    # We don't know duration yet, but max cost is 2.0. Min is 1.0.
+    # Let's verify user has at least 1.0 credit before uploading to save bandwidth.
+    check_credits(current_user, 1.0) 
 
     user_id = current_user.id
     
@@ -134,6 +118,7 @@ async def upload_video(
             shutil.copyfileobj(file.file, buffer)
 
         # Check duration
+        duration = 0
         try:
             from moviepy.editor import VideoFileClip
             clip = VideoFileClip(file_path)
@@ -147,7 +132,12 @@ async def upload_video(
             print("moviepy not installed, skipping duration check")
         except Exception as e:
             print(f"Error checking duration: {e}")
-            # Don't block upload if check fails, but log it
+            
+        # Determing Cost
+        cost = 2.0 if duration > 60 else 1.0
+        
+        # Deduct Credits
+        deduct_credits(current_user, cost, db)
             
         # Create Video record
         video = Video(
@@ -156,7 +146,7 @@ async def upload_video(
             title=file.filename, # Save original filename as title
             storage_path=file_path,
             platform_guess="Unknown",
-            duration=duration if 'duration' in locals() else None
+            duration=duration
         )
         db.add(video)
         db.commit()
@@ -199,20 +189,34 @@ def process_link_import(analysis_id: int, video_id: int, url: str):
 
         # Download
         info = download_video(url)
+        duration = info.get('duration', 0)
+        
+        # Determing Cost
+        cost = 2.0 if duration > 60 else 1.0
+        
+        # We need to deduct credits NOW. But we don't have the user object in this session easily unless we query.
+        # Also, what if they don't have credits? FAILED state?
+        user = db.query(User).filter(User.id == analysis.user_id).first()
+        if user.credits < cost:
+             print(f"Insufficient credits for background task. User has {user.credits}, needs {cost}")
+             analysis.status = AnalysisStatus.FAILED
+             # Optional: Add error message to insights?
+             db.commit()
+             return
+
+        # Deduct
+        user.credits -= cost
+        db.commit()
         
         # Update Video record
         video = db.query(Video).filter(Video.id == video_id).first()
         if video:
             video.storage_path = info['path']
-            video.duration = info['duration']
+            video.duration = duration
             video.title = info['title'] # Save YouTube/TikTok title
             video.platform_guess = info['platform']
             db.commit()
             
-            # Now trigger the analysis logic
-            # We can call process_analysis directly, but we need to be careful about DB sessions.
-            # process_analysis opens its own session.
-            # Let's close ours first to be safe, or just call the logic.
             db.close()
             
             # Call process_analysis (it will open its own session)
@@ -221,7 +225,6 @@ def process_link_import(analysis_id: int, video_id: int, url: str):
 
     except Exception as e:
         print(f"Link Import Failed: {e}")
-        # Re-open session to save error
         db = SessionLocal()
         analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
         if analysis:
@@ -236,8 +239,8 @@ async def import_link(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Check Usage Limit
-    check_usage_limit(current_user, db)
+    # Check Minimum Balance
+    check_credits(current_user, 1.0) # Ensure at least 1 credit to start
 
     user_id = current_user.id
     
@@ -276,8 +279,8 @@ async def analyze_script(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Check Usage Limit
-    check_usage_limit(current_user, db)
+    # Cost: 0.5 Credits
+    deduct_credits(current_user, 0.5, db)
 
     user_id = current_user.id
     

@@ -24,6 +24,7 @@ class UserUpdate(BaseModel):
 class UserOut(UserBase):
     id: int
     plan: PlanType
+    credits: float
     created_at: datetime
     full_name: Optional[str]
     primary_platform: Optional[str]

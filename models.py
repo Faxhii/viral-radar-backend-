@@ -23,6 +23,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     plan = Column(Enum(PlanType), default=PlanType.FREE)
+    credits = Column(Float, default=3.0)
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
