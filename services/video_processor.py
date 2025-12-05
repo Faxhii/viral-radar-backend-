@@ -34,19 +34,8 @@ def download_video(url: str) -> dict:
                 "thumbnail": info.get('thumbnail')
             }
     except Exception as e:
-        # Fallback for testing/MVP without FFmpeg or if download fails
-        print(f"Real download failed: {e}. Using mock data.")
-        mock_path = os.path.join(UPLOAD_DIR, "mock_video.mp4")
-        if not os.path.exists(mock_path):
-            with open(mock_path, "wb") as f:
-                f.write(b"mock video content")
-        return {
-            "path": mock_path,
-            "duration": 60,
-            "title": "Mock Video",
-            "platform": "youtube",
-            "thumbnail": None
-        }
+        print(f"Download failed: {e}")
+        raise e
 
 def extract_audio(video_path: str) -> str:
     """
