@@ -12,6 +12,29 @@ import os
 # Create tables (for MVP, we can just do this on startup)
 Base.metadata.create_all(bind=engine)
 
+from sqlalchemy import text
+def run_migrations():
+    try:
+        with engine.connect() as connection:
+            connection.execution_options(isolation_level="AUTOCOMMIT")
+            print("Checking for schema migrations...")
+            # Check for credits column
+            try:
+                result = connection.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='credits'"))
+                if not result.fetchone():
+                    print("Migrating: Adding 'credits' column to users table...")
+                    connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS credits FLOAT DEFAULT 3.0"))
+                    print("Migration successful: 'credits' column added.")
+                else:
+                    print("Schema check: 'credits' column exists.")
+            except Exception as e:
+                print(f"Migration warning (credits): {e}")
+                
+    except Exception as e:
+        print(f"Migration failed: {e}")
+
+run_migrations()
+
 app = FastAPI(title="ViralRadar.in API")
 
 # Mount uploads directory
