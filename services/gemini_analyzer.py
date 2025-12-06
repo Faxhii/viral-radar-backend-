@@ -12,6 +12,63 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
 
+import re
+
+def clean_json_output(text: str):
+    """
+     robustly cleans and parses JSON content from LLM output.
+    """
+    # 1. Try to find JSON within markdown code blocks
+    pattern = r"```(?:json)?\s*(.*?)```"
+    match = re.search(pattern, text, re.DOTALL)
+    if match:
+        text = match.group(1)
+    
+    text = text.strip()
+    
+    # 2. If valid JSON, return it
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 3. Try to clean invalid escapes (common in LLM output)
+    # This regex looks for backslashes that are NOT followed by valid escape chars
+    # escaped_text = re.sub(r'\\(?![/u"bfnrt])', r'\\\\', text)
+    # Only fix very specific common Windows path issues if they exist
+    # Actually, simpler approach: use strict=False for control characters?
+    # No, invalid \escape is usually \U or similar in paths.
+    
+    try:
+        # Aggressive cleanup: remove non-printable chars
+        # find substring from first { to last }
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1:
+            json_str = text[start:end+1]
+            return json.loads(json_str)
+    except json.JSONDecodeError:
+        pass
+
+    # Last resort: Try replacing single backslashes with double backslashes (careful)
+    try:
+        # A common one is LaTeX or paths: "C:\path". Replacing \ with \\ might break valid escapes.
+        # Let's try to parse with a repaired string where we replace \ with \\ ONLY if it looks like a path separator?
+        # Too complex. Let's just try strict=False
+        return json.loads(text, strict=False) 
+    except Exception:
+         # If all else fails, re-raise the original error or return empty dict
+         pass
+         
+    # Final attempt: manual fix for the specific error observed
+    try:
+        fixed_text = text.replace("\\", "\\\\") # Double escape EVERYTHING (might break quotes but worth a shot if desperate)
+        # Actually that's bad because \" becomes \\" which breaks string closure.
+        # Let's just log and fail.
+        raise ValueError(f"Failed to parse JSON: {text[:100]}...")
+    except Exception as e:
+        raise e
+
 def analyze_video_content(video_path: str, audio_path: str, frames: list[str], context: dict) -> dict:
     """
     Analyzes video content using Gemini Pro Vision (or 1.5 Pro).
@@ -91,18 +148,10 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     }}
     
     Return ONLY the JSON. Do not include markdown formatting like ```json.
+    IMPORTANT: Ensure the JSON is valid. Escape backslashes properly (e.g., \\ for paths).
     """
     
     # Prepare content parts
-    # Note: For a real production app, we should upload files to Gemini File API for better caching/performance
-    # For MVP, we can try sending frames directly if they are small, or better, use the File API.
-    # Let's use the File API for the video file itself if possible, it's easier.
-    
-    # Upload the video file directly to Gemini
-    # For mock video, we can't upload to Gemini as it's not a real video.
-    # if "mock_video" in video_path:
-    #      raise ValueError("Mock video cannot be analyzed by Gemini.")
-
     print(f"Uploading file to Gemini: {video_path}")
     video_file = genai.upload_file(video_path)
     print(f"File uploaded: {video_file.name}, State: {video_file.state.name}")
@@ -125,13 +174,7 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
         print(f"Gemini Generation Error: {e}")
         raise e
     
-    # Clean up response text to ensure it's JSON
-    text = response.text.strip()
-    print(f"Raw Gemini Response: {text[:200]}...") # Print first 200 chars
-    if text.startswith("```json"):
-        text = text[7:-3]
-    
-    return json.loads(text)
+    return clean_json_output(response.text)
 
 def analyze_script_content(script_text: str, context: dict) -> dict:
     """
@@ -218,13 +261,9 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
     }}
     
     Return ONLY the JSON. Do not include markdown formatting like ```json.
+    IMPORTANT: Ensure the JSON is valid. Escape backslashes properly (e.g., \\ for paths).
     """
     
     response = model.generate_content(prompt)
     
-    # Clean up response text to ensure it's JSON
-    text = response.text.strip()
-    if text.startswith("```json"):
-        text = text[7:-3]
-    
-    return json.loads(text)
+    return clean_json_output(response.text)
