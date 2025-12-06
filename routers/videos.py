@@ -334,7 +334,7 @@ def get_analysis(analysis_id: int, db: Session = Depends(get_db), current_user: 
     if analysis.video:
         if analysis.video.storage_path:
             filename = os.path.basename(analysis.video.storage_path)
-            analysis_data.video_url = f"http://localhost:8000/uploads/{filename}"
+            analysis_data.video_url = f"/uploads/{filename}"
         
         analysis_data.source_type = analysis.video.source_type
         analysis_data.script_content = analysis.video.script_content
@@ -512,7 +512,7 @@ def get_videos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), c
             
         if video.storage_path:
              filename = os.path.basename(video.storage_path)
-             video_data.video_url = f"http://localhost:8000/uploads/{filename}"
+             video_data.video_url = f"/uploads/{filename}"
              
         video_data.source_type = video.source_type
              
