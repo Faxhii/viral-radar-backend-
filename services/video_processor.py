@@ -13,6 +13,11 @@ def download_video(url: str) -> dict:
     Downloads a video from a URL using yt-dlp.
     Returns a dict with 'path', 'duration', 'title', 'platform'.
     """
+import shutil
+
+    # Find ffmpeg path dynamically
+    ffmpeg_executable = shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
+    
     ydl_opts = {
         # Limit quality to 480p and verify single file download to avoid ffmpeg merging issues
         'format': 'best[height<=480][ext=mp4]/best[ext=mp4]/best', 
@@ -23,6 +28,11 @@ def download_video(url: str) -> dict:
         'geo_bypass': True,
         'nocheckcertificate': True,
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'ffmpeg_location': ffmpeg_executable, # Explicitly tell yt-dlp where ffmpeg is
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4', # Force convert/remux to clean MP4
+        }],
     }
 
     try:
