@@ -15,7 +15,7 @@ def download_video(url: str) -> dict:
     """
     ydl_opts = {
         # Limit quality to 480p for faster analysis (Gemini doesn't need 4K)
-        'format': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]/best[height<=480]',
+        'format': 'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
         'outtmpl': os.path.join(UPLOAD_DIR, '%(id)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
