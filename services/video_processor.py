@@ -17,8 +17,12 @@ def download_video(url: str) -> dict:
         # Limit quality to 480p and verify single file download to avoid ffmpeg merging issues
         'format': 'best[height<=480][ext=mp4]/best[ext=mp4]/best', 
         'outtmpl': os.path.join(UPLOAD_DIR, '%(id)s.%(ext)s'),
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False, # Enable logs for debugging
+        'no_warnings': False,
+        'ignoreerrors': True, # Don't crash on minor errors
+        'geo_bypass': True,
+        'nocheckcertificate': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     }
 
     try:
