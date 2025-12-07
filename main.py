@@ -50,6 +50,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/debug/migrate")
+def force_migrate(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        # PostgreSQL syntax for adding columns if they don't exist
+        db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub VARCHAR UNIQUE;"))
+        db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS picture VARCHAR;"))
+        db.commit()
+        return {"status": "success", "message": "Migration run successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to ViralRadar.in API"}
