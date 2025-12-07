@@ -8,9 +8,14 @@ class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None
     full_name: Optional[str] = None
     primary_platform: Optional[str] = None
+    picture: Optional[str] = None
+    google_sub: Optional[str] = None
+
+class GoogleToken(BaseModel):
+    token: str
 
 class UserLogin(UserBase):
     password: str
@@ -29,7 +34,9 @@ class UserOut(UserBase):
     full_name: Optional[str]
     primary_platform: Optional[str]
     primary_category: Optional[str]
+    primary_category: Optional[str]
     avg_length: Optional[str]
+    picture: Optional[str]
 
     class Config:
         from_attributes = True

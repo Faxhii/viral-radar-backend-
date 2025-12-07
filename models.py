@@ -33,6 +33,8 @@ class User(Base):
     primary_category = Column(String, nullable=True)
     primary_category = Column(String, nullable=True)
     avg_length = Column(String, nullable=True)
+    google_sub = Column(String, unique=True, nullable=True)
+    picture = Column(String, nullable=True)
     
     # Payment fields
     lemon_squeezy_customer_id = Column(String, nullable=True)
