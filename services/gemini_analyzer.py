@@ -302,7 +302,11 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
         print(f"Gemini Generation Error: {e}")
         raise e
     
+    # Debug Logging
+    print(f"Gemini Raw Response (First 200 chars): {response.text[:200]}")
+
     result = clean_json_output(response.text)
     if result is None:
+        print(f"FULL FAILED RESPONSE TEXT: {response.text}") # Log full text for debugging
         raise ValueError("Failed to parse Gemini response (returned None)")
     return result
