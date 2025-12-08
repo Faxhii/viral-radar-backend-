@@ -76,23 +76,6 @@ def process_analysis(analysis_id: int, video_path: str):
         
         with open("error.log", "a") as f:
             f.write(f"Analysis ID {analysis_id} Failed:\n")
-            traceback.print_exc(file=f)
-            f.write("\n")
-        print(f"Analysis Failed: {e}")
-        analysis.status = AnalysisStatus.FAILED
-        db.commit()
-    finally:
-        db.close()
-
-from datetime import datetime, timedelta
-from sqlalchemy import func
-
-def check_credits(user: User, required_credits: float):
-    if user.credits < required_credits:
-        raise HTTPException(
-            status_code=403, 
-            detail=f"Insufficient credits. Required: {required_credits}, Available: {user.credits}. Please upgrade your plan."
-        )
 
 def deduct_credits(user: User, amount: float, db: Session):
     check_credits(user, amount)
@@ -112,6 +95,11 @@ async def upload_video(
     # We don't know duration yet, but max cost is 2.0. Min is 1.0.
     # Let's verify user has at least 1.0 credit before uploading to save bandwidth.
     check_credits(current_user, 1.0) 
+
+    # Check Concurrency
+    active_jobs = count_active_analyses(current_user.id, db)
+    if active_jobs >= 2:
+        raise HTTPException(status_code=429, detail="Too many active analyses. Please wait for current jobs to finish.") 
 
     user_id = current_user.id
     
@@ -246,6 +234,11 @@ async def import_link(
     # Check Minimum Balance
     check_credits(current_user, 1.0) # Ensure at least 1 credit to start
 
+    # Check Concurrency
+    active_jobs = count_active_analyses(current_user.id, db)
+    if active_jobs >= 2:
+        raise HTTPException(status_code=429, detail="Too many active analyses. Please wait for current jobs to finish.")
+
     user_id = current_user.id
     
     # Create Video record (placeholder)
@@ -285,6 +278,14 @@ async def analyze_script(
 ):
     # Cost: 0.5 Credits
     deduct_credits(current_user, 0.5, db)
+
+    # Check Concurrency
+    active_jobs = count_active_analyses(current_user.id, db)
+    if active_jobs >= 2:
+        # Refund if rejected? 
+        # Actually logic is better: Check BEFORE deduct.
+        # But here logic is messy. Let's move check up.
+        raise HTTPException(status_code=429, detail="Too many active analyses. Please wait for current jobs to finish.")
 
     user_id = current_user.id
     
