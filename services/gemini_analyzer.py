@@ -69,18 +69,6 @@ def clean_json_output(text: str):
         # Let's just log and fail.
         print(f"FAILED JSON RAW TEXT (First 500 chars): {text[:500]}")
         raise ValueError(f"Failed to parse JSON")
-    except Exception:
-        print(f"FINAL FAILED JSON RAW TEXT (First 500 chars): {text[:500]}")
-        return None
-
-def analyze_video_content(video_path: str, audio_path: str, frames: list[str], context: dict) -> dict:
-    """
-    Analyzes video content using Gemini Pro Vision (or 1.5 Pro).
-    Returns a structured JSON response.
-    """
-    if not API_KEY:
-        raise ValueError("GEMINI_API_KEY not found in environment variables.")
-
     print(f"Using API Key: {API_KEY[:5]}...")
     model = genai.GenerativeModel('gemini-1.5-pro')
 
