@@ -189,7 +189,7 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     ]
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
         print("Content generated successfully.")
         
@@ -300,18 +300,6 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
-    ]
-
-    try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(prompt, safety_settings=safety_settings)
-    except Exception as e:
-        print(f"Gemini Generation Error: {e}")
-        raise e
-    
-    # Debug Logging
-    print(f"Gemini Raw Response (First 200 chars): {response.text[:200]}")
 
     result = clean_json_output(response.text)
     if result is None:
