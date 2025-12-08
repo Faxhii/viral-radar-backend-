@@ -42,9 +42,15 @@ os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Configure CORS
+origins = [
+    "http://localhost:3000",
+    "https://viral-radar.vercel.app",
+    "https://viral-radar-backend.up.railway.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for dev to fix CORS issues
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
