@@ -3,6 +3,8 @@ import google.generativeai as genai
 import json
 from dotenv import load_dotenv
 from pathlib import Path
+from google.api_core import exceptions
+
 
 # Load .env from backend directory explicitly if needed, or rely on cwd
 env_path = Path(__file__).parent.parent / '.env'
@@ -179,17 +181,27 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     ]
     
     try:
+        # Try with the pro model first
+        print("Detailed Analysis: Attempting with gemini-1.5-pro...")
         response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
-        print("Content generated successfully.")
+        print("Content generated successfully with 1.5-pro.")
         
         # Check if response was blocked
         if response.prompt_feedback and response.prompt_feedback.block_reason:
              print(f"BLOCKED BY SAFETY FILTERS: {response.prompt_feedback.block_reason}")
              raise ValueError(f"Content blocked by safety filters: {response.prompt_feedback.block_reason}")
              
-    except Exception as e:
-        print(f"Gemini Generation Error: {e}")
-        raise e
+    except (exceptions.GoogleAPICallError, Exception) as e:
+        print(f"Gemini 1.5 Pro Failed: {e}")
+        print("Falling back to gemini-2.0-flash for resilience...")
+        
+        try:
+             fallback_model = genai.GenerativeModel('gemini-2.0-flash')
+             response = fallback_model.generate_content([prompt, video_file], safety_settings=safety_settings)
+             print("Content generated successfully with gemini-2.0-flash (Fallback).")
+        except Exception as e2:
+             print(f"CRITICAL: Both models failed. Last error: {e2}")
+             raise e2
     
     result = clean_json_output(response.text)
     if result is None:
@@ -292,7 +304,20 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
     ]
 
-    response = model.generate_content(prompt, safety_settings=safety_settings)
+    try:
+        print("Script Analysis: Attempting with gemini-1.5-pro...")
+        response = model.generate_content(prompt, safety_settings=safety_settings)
+        print("Script analyzed successfully with 1.5-pro.")
+    except (exceptions.GoogleAPICallError, Exception) as e:
+        print(f"Gemini 1.5 Pro Failed for script: {e}")
+        print("Falling back to gemini-2.0-flash...")
+        try:
+             fallback_model = genai.GenerativeModel('gemini-2.0-flash')
+             response = fallback_model.generate_content(prompt, safety_settings=safety_settings)
+             print("Script analyzed successfully with gemini-2.0-flash (Fallback).")
+        except Exception as e2:
+             print(f"CRITICAL: Both models failed for script. Last error: {e2}")
+             raise e2
     
     result = clean_json_output(response.text)
     if result is None:
