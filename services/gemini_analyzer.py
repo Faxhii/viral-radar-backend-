@@ -80,7 +80,7 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
         raise ValueError("GEMINI_API_KEY not found in environment variables.")
 
     print(f"Using API Key: {API_KEY[:5]}...")
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-1.5-pro')
 
     # Prepare the prompt
     prompt = f"""
@@ -205,7 +205,7 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
         raise ValueError("GEMINI_API_KEY not found in environment variables.")
 
     print(f"Using API Key: {API_KEY[:5]}...")
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-1.5-pro')
 
     # Prepare the prompt
     prompt = f"""
