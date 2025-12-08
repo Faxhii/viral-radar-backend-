@@ -65,9 +65,11 @@ def clean_json_output(text: str):
         fixed_text = text.replace("\\", "\\\\") # Double escape EVERYTHING (might break quotes but worth a shot if desperate)
         # Actually that's bad because \" becomes \\" which breaks string closure.
         # Let's just log and fail.
-        raise ValueError(f"Failed to parse JSON: {text[:100]}...")
-    except Exception as e:
-        raise e
+        print(f"FAILED JSON RAW TEXT (First 500 chars): {text[:500]}")
+        raise ValueError(f"Failed to parse JSON")
+    except Exception:
+        print(f"FINAL FAILED JSON RAW TEXT (First 500 chars): {text[:500]}")
+        return None
 
 def analyze_video_content(video_path: str, audio_path: str, frames: list[str], context: dict) -> dict:
     """
@@ -167,14 +169,32 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
         raise ValueError("Video processing failed by Gemini.")
 
     print("Generating content...")
+    
+    # Configure safety settings to avoid blocking "edgy" viral content
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
+    ]
+    
     try:
-        response = model.generate_content([prompt, video_file])
+        response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
         print("Content generated successfully.")
+        
+        # Check if response was blocked
+        if response.prompt_feedback and response.prompt_feedback.block_reason:
+             print(f"BLOCKED BY SAFETY FILTERS: {response.prompt_feedback.block_reason}")
+             raise ValueError(f"Content blocked by safety filters: {response.prompt_feedback.block_reason}")
+             
     except Exception as e:
         print(f"Gemini Generation Error: {e}")
         raise e
     
-    return clean_json_output(response.text)
+    result = clean_json_output(response.text)
+    if result is None:
+        raise ValueError("Failed to parse Gemini response (returned None)")
+    return result
 
 def analyze_script_content(script_text: str, context: dict) -> dict:
     """
@@ -264,6 +284,17 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
     IMPORTANT: Ensure the JSON is valid. Escape backslashes properly (e.g., \\ for paths).
     """
     
-    response = model.generate_content(prompt)
+    # Configure safety settings to avoid blocking "edgy" viral content
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
+    ]
+
+    response = model.generate_content(prompt, safety_settings=safety_settings)
     
-    return clean_json_output(response.text)
+    result = clean_json_output(response.text)
+    if result is None:
+        raise ValueError("Failed to parse Gemini response (returned None)")
+    return result

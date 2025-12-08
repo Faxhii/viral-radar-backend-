@@ -56,6 +56,10 @@ def process_analysis(analysis_id: int, video_path: str):
         else:
             result = analyze_video_content(video_path, None, None, context)
         
+        # Validate result
+        if not result or "overall_score" not in result:
+             raise ValueError(f"Analysis returned incomplete data: {result}")
+
         # 3. Save Results
         analysis.overall_score = result.get("overall_score")
         analysis.subscores = result.get("subscores")
