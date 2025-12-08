@@ -13,6 +13,14 @@ load_dotenv(dotenv_path=env_path)
 API_KEY = os.getenv("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
+    try:
+        print(f"GOOGLE GENAI SDK VERSION: {genai.__version__}")
+        print("Listing available models...")
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                print(f"AVAILABLE MODEL: {m.name}")
+    except Exception as e:
+        print(f"Failed to list models on startup: {e}")
 
 import re
 
@@ -181,7 +189,7 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     ]
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-001')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
         print("Content generated successfully.")
         
@@ -296,7 +304,7 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
     ]
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-001')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt, safety_settings=safety_settings)
     except Exception as e:
         print(f"Gemini Generation Error: {e}")
