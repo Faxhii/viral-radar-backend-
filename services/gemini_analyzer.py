@@ -181,7 +181,7 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     ]
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
         print("Content generated successfully.")
         
@@ -296,7 +296,7 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
     ]
 
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt, safety_settings=safety_settings)
     except Exception as e:
         print(f"Gemini Generation Error: {e}")
