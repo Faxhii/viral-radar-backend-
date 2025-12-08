@@ -181,27 +181,18 @@ def analyze_video_content(video_path: str, audio_path: str, frames: list[str], c
     ]
     
     try:
-        # Try with the pro model first
-        print("Detailed Analysis: Attempting with gemini-1.5-pro...")
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content([prompt, video_file], safety_settings=safety_settings)
-        print("Content generated successfully with 1.5-pro.")
+        print("Content generated successfully.")
         
         # Check if response was blocked
         if response.prompt_feedback and response.prompt_feedback.block_reason:
              print(f"BLOCKED BY SAFETY FILTERS: {response.prompt_feedback.block_reason}")
              raise ValueError(f"Content blocked by safety filters: {response.prompt_feedback.block_reason}")
              
-    except (exceptions.GoogleAPICallError, Exception) as e:
-        print(f"Gemini 1.5 Pro Failed: {e}")
-        print("Falling back to gemini-2.0-flash for resilience...")
-        
-        try:
-             fallback_model = genai.GenerativeModel('gemini-2.0-flash')
-             response = fallback_model.generate_content([prompt, video_file], safety_settings=safety_settings)
-             print("Content generated successfully with gemini-2.0-flash (Fallback).")
-        except Exception as e2:
-             print(f"CRITICAL: Both models failed. Last error: {e2}")
-             raise e2
+    except Exception as e:
+        print(f"Gemini Generation Error: {e}")
+        raise e
     
     result = clean_json_output(response.text)
     if result is None:
@@ -305,19 +296,11 @@ def analyze_script_content(script_text: str, context: dict) -> dict:
     ]
 
     try:
-        print("Script Analysis: Attempting with gemini-1.5-pro...")
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt, safety_settings=safety_settings)
-        print("Script analyzed successfully with 1.5-pro.")
-    except (exceptions.GoogleAPICallError, Exception) as e:
-        print(f"Gemini 1.5 Pro Failed for script: {e}")
-        print("Falling back to gemini-2.0-flash...")
-        try:
-             fallback_model = genai.GenerativeModel('gemini-2.0-flash')
-             response = fallback_model.generate_content(prompt, safety_settings=safety_settings)
-             print("Script analyzed successfully with gemini-2.0-flash (Fallback).")
-        except Exception as e2:
-             print(f"CRITICAL: Both models failed for script. Last error: {e2}")
-             raise e2
+    except Exception as e:
+        print(f"Gemini Generation Error: {e}")
+        raise e
     
     result = clean_json_output(response.text)
     if result is None:
