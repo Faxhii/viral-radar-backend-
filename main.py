@@ -101,18 +101,22 @@ class UserAdmin(ModelView, model=User):
     name = "User"
     name_plural = "Users"
     icon = "fa-solid fa-user"
+    category = "Accounts"
 
 class VideoAdmin(ModelView, model=Video):
     column_list = [Video.id, Video.owner, Video.source_type, Video.created_at]
     icon = "fa-solid fa-video"
+    category = "Content"
 
 class AnalysisAdmin(ModelView, model=Analysis):
     column_list = [Analysis.id, Analysis.status, Analysis.overall_score, Analysis.created_at]
     icon = "fa-solid fa-chart-line"
+    category = "Content"
 
 class ReviewAdmin(ModelView, model=Review):
     column_list = [Review.id, Review.name, Review.rating, Review.is_approved, Review.created_at]
     icon = "fa-solid fa-star"
+    category = "Content"
 
 # Setup Admin Authentication
 from sqladmin.authentication import AuthenticationBackend
@@ -147,7 +151,7 @@ class AdminAuth(AuthenticationBackend):
 authentication_backend = AdminAuth(secret_key=os.getenv("SECRET_KEY", "supersecretkey"))
 
 # Setup Admin
-admin = Admin(app, engine, authentication_backend=authentication_backend)
+admin = Admin(app, engine, authentication_backend=authentication_backend, title="ViralRadar Admin")
 admin.add_view(UserAdmin)
 admin.add_view(VideoAdmin)
 admin.add_view(AnalysisAdmin)
