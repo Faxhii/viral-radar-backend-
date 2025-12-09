@@ -28,7 +28,11 @@ def download_video(url: str) -> dict:
         'ignoreerrors': True, # Don't crash on minor errors
         'geo_bypass': True,
         'nocheckcertificate': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        # Updated User Agent (Chrome 120 on Windows 10)
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'http_headers': {
+            'Referer': 'https://www.instagram.com/' if is_instagram else 'https://www.tiktok.com/' if is_tiktok else 'https://www.google.com/'
+        }
     }
     
     if is_instagram:
@@ -50,6 +54,9 @@ def download_video(url: str) -> dict:
             # First try to extract info
             info = ydl.extract_info(url, download=True)
             
+            if not info:
+                raise ValueError("Download failed (no info returned). The video might be private or deleted.")
+
             # If it's a playlist or list (rare for single link, but possible)
             if 'entries' in info:
                 info = info['entries'][0]
