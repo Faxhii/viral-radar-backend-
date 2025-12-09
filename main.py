@@ -151,7 +151,7 @@ class AdminAuth(AuthenticationBackend):
 authentication_backend = AdminAuth(secret_key=os.getenv("SECRET_KEY", "supersecretkey"))
 
 # Setup Admin
-admin = Admin(app, engine, authentication_backend=authentication_backend, title="ViralRadar Admin")
+admin = Admin(app, engine, authentication_backend=authentication_backend, title="ViralRadar Admin", templates_dir="templates")
 admin.add_view(UserAdmin)
 admin.add_view(VideoAdmin)
 admin.add_view(AnalysisAdmin)
