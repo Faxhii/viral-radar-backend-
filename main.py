@@ -45,7 +45,9 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 origins = [
     "http://localhost:3000",
     "https://viral-radar.vercel.app",
-    "https://viral-radar-backend.up.railway.app"
+    "https://viral-radar-backend.up.railway.app",
+    "https://viralradar.in",
+    "https://www.viralradar.in"
 ]
 
 app.add_middleware(
