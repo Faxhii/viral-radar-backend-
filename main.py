@@ -114,8 +114,40 @@ class ReviewAdmin(ModelView, model=Review):
     column_list = [Review.id, Review.name, Review.rating, Review.is_approved, Review.created_at]
     icon = "fa-solid fa-star"
 
+# Setup Admin Authentication
+from sqladmin.authentication import AuthenticationBackend
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
+
+class AdminAuth(AuthenticationBackend):
+    async def login(self, request: Request) -> bool:
+        form = await request.form()
+        username = form.get("username")
+        password = form.get("password")
+
+        # Get credentials from env or use defaults
+        expected_username = os.getenv("ADMIN_USERNAME", "admin")
+        expected_password = os.getenv("ADMIN_PASSWORD", "change_this_password")
+
+        if username == expected_username and password == expected_password:
+            request.session.update({"token": "valid_token"})
+            return True
+        return False
+
+    async def logout(self, request: Request) -> bool:
+        request.session.clear()
+        return True
+
+    async def authenticate(self, request: Request) -> bool:
+        token = request.session.get("token")
+        if not token:
+            return False
+        return True
+
+authentication_backend = AdminAuth(secret_key=os.getenv("SECRET_KEY", "supersecretkey"))
+
 # Setup Admin
-admin = Admin(app, engine)
+admin = Admin(app, engine, authentication_backend=authentication_backend)
 admin.add_view(UserAdmin)
 admin.add_view(VideoAdmin)
 admin.add_view(AnalysisAdmin)
