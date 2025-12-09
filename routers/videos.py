@@ -77,6 +77,16 @@ def process_analysis(analysis_id: int, video_path: str):
         with open("error.log", "a") as f:
             f.write(f"Analysis ID {analysis_id} Failed:\n")
 
+def check_credits(user: User, amount: float):
+    if user.credits < amount:
+        raise HTTPException(status_code=402, detail="Insufficient credits")
+
+def count_active_analyses(user_id: int, db: Session) -> int:
+    return db.query(Analysis).filter(
+        Analysis.user_id == user_id,
+        Analysis.status.in_([AnalysisStatus.QUEUED, AnalysisStatus.PROCESSING, AnalysisStatus.ANALYZING])
+    ).count()
+
 def deduct_credits(user: User, amount: float, db: Session):
     check_credits(user, amount)
     user.credits -= amount
