@@ -101,13 +101,15 @@ async def verify_payment(
         
         if request.plan == 'pro':
             current_user.plan = PlanType.PRO
-            # Store payment info if you have columns for it, or just log it
-            # current_user.razorpay_payment_id = request.razorpay_payment_id
+            current_user.credits += 40.0 # Add 40 credits
+        elif request.plan == 'agency':
+            current_user.plan = PlanType.AGENCY
+            current_user.credits += 100.0 # Add 100 credits
             
-            db.commit()
-            db.refresh(current_user)
+        db.commit()
+        db.refresh(current_user)
             
-        return {"status": "success", "message": "Payment verified and user upgraded"}
+        return {"status": "success", "message": f"Payment verified. Upgraded to {request.plan} and credits added."}
             
     except Exception as e:
         print(f"Error updating user plan: {e}")
