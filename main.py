@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base, SessionLocal, get_db
-from routers import videos, auth, payments
+from routers import videos, auth, razorpay
 from models import User, PlanType, Video, Analysis, Review
 from schemas import ReviewCreate, ReviewOut
 from typing import List
@@ -88,7 +88,7 @@ def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
 
 app.include_router(auth.router)
 app.include_router(videos.router)
-app.include_router(payments.router)
+app.include_router(razorpay.router)
 
 from sqladmin import Admin, ModelView
 
