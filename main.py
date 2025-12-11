@@ -86,6 +86,51 @@ def force_migrate(db: Session = Depends(get_db)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/debug/email")
+def debug_email_connection():
+    """
+    Diagnose SMTP connectivity from the server.
+    """
+    import smtplib
+    import socket
+    import ssl
+    
+    results = {}
+    
+    # Test Port 587 (TLS)
+    try:
+        print("Testing connection to smtp.gmail.com:587...")
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+            server.set_debuglevel(1)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            results["port_587"] = "Connection Successful (TLS)"
+    except Exception as e:
+        results["port_587"] = f"Failed: {str(e)}"
+
+    # Test Port 465 (SSL)
+    try:
+        print("Testing connection to smtp.gmail.com:465...")
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10, context=context) as server:
+            server.ehlo()
+            results["port_465"] = "Connection Successful (SSL)"
+    except Exception as e:
+        results["port_465"] = f"Failed: {str(e)}"
+        
+    # Check Environment Variables (Masked)
+    mail_user = os.getenv('MAIL_USERNAME', '')
+    mail_pass = os.getenv('MAIL_PASSWORD', '')
+    results["env_check"] = {
+        "MAIL_USERNAME": f"{mail_user[:3]}***{mail_user[-3:]}" if len(mail_user) > 6 else "Not Set/Too Short",
+        "MAIL_PASSWORD_SET": bool(mail_pass),
+        "MAIL_PORT": os.getenv('MAIL_PORT'),
+        "MAIL_SERVER": os.getenv('MAIL_SERVER')
+    }
+
+    return results
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to ViralRadar.in API"}
