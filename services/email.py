@@ -23,9 +23,11 @@ async def send_login_notification(email: str):
     <p>Viral Creator Team</p>
     """
 
+    sender_email = os.getenv('MAIL_FROM', 'Viral Creator <onboarding@resend.dev>')
+
     try:
         r = resend.Emails.send({
-            "from": "Viral Creator <onboarding@resend.dev>",
+            "from": sender_email,
             "to": email,
             "subject": "New Sign-in Detected",
             "html": html
@@ -55,9 +57,11 @@ async def send_verification_email(email: str, otp: str):
     </div>
     """
 
+    sender_email = os.getenv('MAIL_FROM', 'Viral Creator <onboarding@resend.dev>')
+    
     try:
         r = resend.Emails.send({
-            "from": "Viral Creator <onboarding@resend.dev>",
+            "from": sender_email,
             "to": email,
             "subject": "Your Verification Code - Viral Creator",
             "html": html
