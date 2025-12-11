@@ -1,38 +1,17 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from pydantic import EmailStr, BaseModel
-from typing import List
 import os
+import resend
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class EmailSchema(BaseModel):
-    email: List[EmailStr]
-
-mail_port = int(os.getenv('MAIL_PORT', 587))
-use_ssl = (mail_port == 465)
-use_tls = (mail_port == 587)
-
-conf = ConnectionConfig(
-    MAIL_USERNAME = os.getenv('MAIL_USERNAME', ''),
-    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', ''),
-    MAIL_FROM = os.getenv('MAIL_FROM', 'noreply@viralcreator.com'),
-    MAIL_PORT = mail_port,
-    MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com'),
-    MAIL_STARTTLS = use_tls,
-    MAIL_SSL_TLS = use_ssl,
-    USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True,
-    # Increase timeout to 60 seconds (default is often too short for some cloud environments)
-    TIMEOUT = 60 
-)
+resend.api_key = os.getenv('RESEND_API_KEY')
 
 async def send_login_notification(email: str):
     """
     Sends a login notification email to the user.
     """
-    if not os.getenv('MAIL_USERNAME') or not os.getenv('MAIL_PASSWORD'):
-        print("Email credentials not set. Skipping email sending.")
+    if not resend.api_key:
+        print("Resend API Key not set. Skipping email sending.")
         return
 
     html = f"""
@@ -44,17 +23,14 @@ async def send_login_notification(email: str):
     <p>Viral Creator Team</p>
     """
 
-    message = MessageSchema(
-        subject="New Sign-in Detected",
-        recipients=[email],
-        body=html,
-        subtype=MessageType.html
-    )
-
-    fm = FastMail(conf)
     try:
-        await fm.send_message(message)
-        print(f"Login notification sent to {email}")
+        r = resend.Emails.send({
+            "from": "Viral Creator <onboarding@resend.dev>",
+            "to": email,
+            "subject": "New Sign-in Detected",
+            "html": html
+        })
+        print(f"Login notification sent to {email}. ID: {r.get('id')}")
     except Exception as e:
         print(f"Failed to send email: {e}")
 
@@ -62,8 +38,8 @@ async def send_verification_email(email: str, otp: str):
     """
     Sends a verification email with the OTP to verify the account.
     """
-    if not os.getenv('MAIL_USERNAME') or not os.getenv('MAIL_PASSWORD'):
-        print("Email credentials not set. Skipping verification email.")
+    if not resend.api_key:
+        print("Resend API Key not set. Skipping verification email.")
         return
 
     html = f"""
@@ -79,17 +55,14 @@ async def send_verification_email(email: str, otp: str):
     </div>
     """
 
-    message = MessageSchema(
-        subject="Your Verification Code - Viral Creator",
-        recipients=[email],
-        body=html,
-        subtype=MessageType.html
-    )
-
-    fm = FastMail(conf)
     try:
-        await fm.send_message(message)
-        print(f"Verification OTP sent to {email}")
+        r = resend.Emails.send({
+            "from": "Viral Creator <onboarding@resend.dev>",
+            "to": email,
+            "subject": "Your Verification Code - Viral Creator",
+            "html": html
+        })
+        print(f"Verification OTP sent to {email}. ID: {r.get('id')}")
     except Exception as e:
         print(f"Failed to send verification email: {e}")
 
