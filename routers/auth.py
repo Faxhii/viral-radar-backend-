@@ -181,4 +181,14 @@ def verify_email(data: schemas.VerifyEmail, db: Session = Depends(database.get_d
     user.verification_token = None # Clear OTP after use
     db.commit()
     
-    return {"message": "Email verified successfully"}
+    # Generate access token
+    access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = utils.create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    
+    return {
+        "message": "Email verified successfully",
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
