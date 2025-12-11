@@ -14,6 +14,10 @@ class UserCreate(UserBase):
     picture: Optional[str] = None
     google_sub: Optional[str] = None
 
+class VerifyEmail(BaseModel):
+    email: EmailStr
+    otp: str
+
 class GoogleToken(BaseModel):
     token: str
 
@@ -33,7 +37,6 @@ class UserOut(UserBase):
     created_at: datetime
     full_name: Optional[str]
     primary_platform: Optional[str]
-    primary_category: Optional[str]
     primary_category: Optional[str]
     avg_length: Optional[str]
     picture: Optional[str]
@@ -83,7 +86,6 @@ class AnalysisOut(AnalysisBase):
     subscores: Optional[Dict[str, Any]]
     insights: Optional[Dict[str, Any]]
     optimized_assets: Optional[Dict[str, Any]]
-    checklist: Optional[Dict[str, Any]]
     checklist: Optional[Dict[str, Any]]
     created_at: datetime
     video_url: Optional[str] = None

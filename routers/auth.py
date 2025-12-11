@@ -21,7 +21,10 @@ def register(user: schemas.UserCreate, background_tasks: BackgroundTasks, db: Se
             raise HTTPException(status_code=400, detail="Email already registered")
         
         hashed_password = utils.get_password_hash(user.password)
-        verification_token = str(uuid.uuid4())
+        # Generate 6-digit OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        
         new_user = models.User(
             email=user.email,
             hashed_password=hashed_password,
@@ -29,14 +32,14 @@ def register(user: schemas.UserCreate, background_tasks: BackgroundTasks, db: Se
             primary_platform=user.primary_platform,
             credits=3.0, # Default free credits
             is_verified=False,
-            verification_token=verification_token
+            verification_token=otp # Store OTP in verification_token column
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
         
-        # Send verification email
-        background_tasks.add_task(send_verification_email, new_user.email, verification_token)
+        # Send verification email with OTP
+        background_tasks.add_task(send_verification_email, new_user.email, otp)
         
         return new_user
 
@@ -76,7 +79,8 @@ def google_auth(token_data: schemas.GoogleToken, db: Session = Depends(database.
                 google_sub=sub,
                 picture=picture,
                 credits=3.0, # Default free credits
-                plan=models.PlanType.FREE
+                plan=models.PlanType.FREE,
+                is_verified=True # Google users are auto-verified
             )
             db.add(user)
             db.commit()
@@ -87,6 +91,10 @@ def google_auth(token_data: schemas.GoogleToken, db: Session = Depends(database.
                 user.google_sub = sub
             if not user.picture:
                 user.picture = picture
+            # Ensure Google logged in users are verified if they previously registered via email but didn't verify
+            if not user.is_verified:
+                user.is_verified = True
+                
             db.commit()
             db.refresh(user)
 
@@ -156,17 +164,21 @@ async def update_user_me(
     db.refresh(current_user)
     return current_user
 
-@router.get("/verify")
-def verify_email(token: str, db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.verification_token == token).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid verification token")
+@router.post("/verify")
+def verify_email(data: schemas.VerifyEmail, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == data.email).first()
     
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+        
     if user.is_verified:
         return {"message": "Email already verified"}
+        
+    if user.verification_token != data.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
     
     user.is_verified = True
-    user.verification_token = None # Optional: Clear token after use
+    user.verification_token = None # Clear OTP after use
     db.commit()
     
     return {"message": "Email verified successfully"}
