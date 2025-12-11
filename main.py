@@ -14,9 +14,6 @@ Base.metadata.create_all(bind=engine)
 
 from sqlalchemy import text
 def run_migrations():
-    except Exception as e:
-        print(f"Migration failed (init): {e}")
-
     try:
         with engine.connect() as connection:
             connection.execution_options(isolation_level="AUTOCOMMIT")
