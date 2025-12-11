@@ -9,16 +9,22 @@ load_dotenv()
 class EmailSchema(BaseModel):
     email: List[EmailStr]
 
+mail_port = int(os.getenv('MAIL_PORT', 587))
+use_ssl = (mail_port == 465)
+use_tls = (mail_port == 587)
+
 conf = ConnectionConfig(
     MAIL_USERNAME = os.getenv('MAIL_USERNAME', ''),
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', ''),
     MAIL_FROM = os.getenv('MAIL_FROM', 'noreply@viralcreator.com'),
-    MAIL_PORT = int(os.getenv('MAIL_PORT', 587)),
+    MAIL_PORT = mail_port,
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com'),
-    MAIL_STARTTLS = True,
-    MAIL_SSL_TLS = False,
+    MAIL_STARTTLS = use_tls,
+    MAIL_SSL_TLS = use_ssl,
     USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True
+    VALIDATE_CERTS = True,
+    # Increase timeout to 60 seconds (default is often too short for some cloud environments)
+    TIMEOUT = 60 
 )
 
 async def send_login_notification(email: str):
