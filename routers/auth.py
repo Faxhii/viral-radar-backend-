@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import schemas, models, utils, database
+from services.email import send_login_notification
+
 
 router = APIRouter(
     prefix="/auth",
@@ -94,7 +97,11 @@ def google_auth(token_data: schemas.GoogleToken, db: Session = Depends(database.
         raise HTTPException(status_code=400, detail="Invalid Google token")
 
 @router.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+def login_for_access_token(
+    background_tasks: BackgroundTasks,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(database.get_db)
+):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not user.hashed_password or not utils.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -103,11 +110,15 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Send login notification email
+    background_tasks.add_task(send_login_notification, user.email)
+    
     access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.get("/me", response_model=schemas.UserOut)
 async def read_users_me(current_user: models.User = Depends(utils.get_current_user)):
