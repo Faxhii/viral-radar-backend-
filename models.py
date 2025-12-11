@@ -25,12 +25,13 @@ class User(Base):
     plan = Column(Enum(PlanType), default=PlanType.FREE)
     credits = Column(Float, default=3.0)
     is_superuser = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Profile fields
     full_name = Column(String, nullable=True)
     primary_platform = Column(String, nullable=True)
-    primary_category = Column(String, nullable=True)
     primary_category = Column(String, nullable=True)
     avg_length = Column(String, nullable=True)
     google_sub = Column(String, unique=True, nullable=True)
