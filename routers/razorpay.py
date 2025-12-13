@@ -101,10 +101,10 @@ async def verify_payment(
         
         if request.plan == 'pro':
             current_user.plan = PlanType.PRO
-            current_user.credits += 40.0 # Add 40 credits
+            current_user.credits += 50.0 # Add 50 credits
         elif request.plan == 'agency':
             current_user.plan = PlanType.AGENCY
-            current_user.credits += 100.0 # Add 100 credits
+            current_user.credits += 110.0 # Add 110 credits
         elif request.plan == 'starter':
             # Starter Pack: Just add credits, don't change plan type (or keep as is)
             current_user.credits += 15.0 # Add 15 credits

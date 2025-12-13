@@ -136,7 +136,8 @@ async def upload_video(
             print(f"Error checking duration: {e}")
             
         # Determing Cost
-        cost = 2.0 if duration > 60 else 1.0
+        # 1 Credit = Up to 2 minutes (120 seconds)
+        cost = 2.0 if duration > 120 else 1.0
         
         # Deduct Credits
         deduct_credits(current_user, cost, db)
@@ -194,7 +195,8 @@ def process_link_import(analysis_id: int, video_id: int, url: str):
         duration = info.get('duration', 0)
         
         # Determing Cost
-        cost = 2.0 if duration > 60 else 1.0
+        # 1 Credit = Up to 2 minutes (120 seconds)
+        cost = 2.0 if duration > 120 else 1.0
         
         # We need to deduct credits NOW. But we don't have the user object in this session easily unless we query.
         # Also, what if they don't have credits? FAILED state?
