@@ -105,6 +105,9 @@ async def verify_payment(
         elif request.plan == 'agency':
             current_user.plan = PlanType.AGENCY
             current_user.credits += 100.0 # Add 100 credits
+        elif request.plan == 'starter':
+            # Starter Pack: Just add credits, don't change plan type (or keep as is)
+            current_user.credits += 3.0 # Add 3 credits
             
         db.commit()
         db.refresh(current_user)
