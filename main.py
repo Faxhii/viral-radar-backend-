@@ -191,8 +191,8 @@ class AdminAuth(AuthenticationBackend):
         password = form.get("password")
 
         # Get credentials from env or use defaults
-        expected_username = os.getenv("ADMIN_USERNAME", "admin")
-        expected_password = os.getenv("ADMIN_PASSWORD", "change_this_password")
+        expected_username = os.getenv("ADMIN_USERNAME", "fadhi")
+        expected_password = os.getenv("ADMIN_PASSWORD", "admin 123")
 
         if username == expected_username and password == expected_password:
             request.session.update({"token": "valid_token"})
